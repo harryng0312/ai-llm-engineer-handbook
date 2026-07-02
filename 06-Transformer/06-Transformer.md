@@ -167,10 +167,7 @@ So với [Chương 6.5](#chương-65--kiến-trúc-decoder-only-hiện-đại), 
 
 **Positional Encoding kiểu sinusoidal** — trước khi RoPE ra đời ([Chương 6.6](#chương-66--rope)), vị trí được mã hóa bằng cách **cộng thẳng** một vector cố định (không học được, tính sẵn bằng công thức sin/cos) vào embedding token trước khi vào layer đầu tiên:
 
-```
-PE(pos, 2i)   = sin(pos / 10000^(2i/d))
-PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
-```
+$$PE_{(pos,\ 2i)} = \sin\left(\frac{pos}{10000^{2i/d}}\right) \qquad PE_{(pos,\ 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d}}\right)$$
 
 ```python
 import numpy as np
@@ -294,9 +291,7 @@ x -> RMSNorm -> Self-Attention (causal, RoPE) -> +residual
 
 Attention cho phép mỗi token "hỏi" các token khác để lấy thông tin liên quan. Từ embedding của mỗi token, ba ma trận trọng số học được chiếu ra 3 vector: Query `Q` (câu hỏi token đang cần), Key `K` (nhãn để token khác biết có đáng trả lời không), Value `V` (nội dung thực sự lấy về nếu liên quan):
 
-```
-Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k  +  mask ) · V
-```
+$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}} + \text{mask}\right)V$$
 
 Sơ đồ luồng dữ liệu của 1 attention head:
 
@@ -433,10 +428,7 @@ RoPE (Su et al., 2021) không cộng một vector vị trí vào embedding như 
 
 Công thức (cho một cặp chiều `(x1, x2)` ở vị trí `m`, tần số `θ`):
 
-```
-x1' = x1 * cos(mθ) - x2 * sin(mθ)
-x2' = x1 * sin(mθ) + x2 * cos(mθ)
-```
+$$x_1' = x_1 \cos(m\theta) - x_2 \sin(m\theta) \qquad x_2' = x_1 \sin(m\theta) + x_2 \cos(m\theta)$$
 
 Hình dung phép xoay này trong mặt phẳng 2 chiều `(x1, x2)`: độ dài vector giữ nguyên, chỉ quay đi một góc `mθ` tỉ lệ thuận với vị trí token `m` — token càng đứng xa nhau, góc lệch giữa 2 vector Q/K sau khi xoay càng khác nhau, nhờ đó tích `Q·K` "đọc" được khoảng cách tương đối mà không cần cộng thêm bất kỳ vector vị trí nào:
 
@@ -482,12 +474,12 @@ print(np.allclose(q_at_pos_0, q))  # True: vị trí 0 -> góc xoay = 0, vector 
 
 Mỗi cặp chiều trong vector có một tần số `θ_i` riêng — cặp chiều đầu quay rất nhanh theo vị trí (bắt thông tin vị trí *cục bộ*, giữa các token sát nhau), cặp chiều cuối quay rất chậm (bắt thông tin vị trí *toàn cục*, giữa các token ở xa) — giống cách một chiếc đồng hồ dùng cả kim giây (nhanh) lẫn kim giờ (chậm) để mã hóa thời gian không nhập nhằng trong một phạm vi rộng:
 
-```
-cặp chiều (0, 1):      θ_0 = 1/10000^(0/d)        ≈ 1.0      → quay nhanh   (như kim giây)
-cặp chiều (2, 3):      θ_1 = 1/10000^(2/d)        ≈ 0.316    → quay vừa
-        ...
-cặp chiều (d-2, d-1):  θ_(d/2-1) = 1/10000^((d-2)/d) ≈ 0.0001 → quay rất chậm (như kim giờ)
-```
+| Cặp chiều | Tần số | Giá trị xấp xỉ | Vai trò |
+|---|---|---|---|
+| $(0, 1)$ | $\theta_0 = 1/10000^{0/d}$ | $\approx 1.0$ | Quay nhanh (như kim giây) — bắt vị trí *cục bộ* |
+| $(2, 3)$ | $\theta_1 = 1/10000^{2/d}$ | $\approx 0.316$ | Quay vừa |
+| ... | ... | ... | ... |
+| $(d-2, d-1)$ | $\theta_{d/2-1} = 1/10000^{(d-2)/d}$ | $\approx 0.0001$ | Quay rất chậm (như kim giờ) — bắt vị trí *toàn cục* |
 
 Trực giác quan trọng cần nhớ: RoPE áp dụng lên **Q và K trước khi tính attention**, không áp lên V. Nhờ tính chất "chỉ phụ thuộc vị trí tương đối", các kỹ thuật kéo dài context (NTK-aware scaling, YaRN) đều là các biến thể chỉnh lại `base`/`theta` của RoPE.
 
@@ -566,9 +558,9 @@ Chạy thử sẽ thấy bản có cache nhanh hơn rõ rệt khi số token sin
 
 ### KV cache chiếm bao nhiêu VRAM?
 
-```
-KV cache (bytes) = 2 (K và V) × n_layers × n_kv_heads × head_dim × seq_len × batch × bytes/phần_tử
-```
+$$\text{KV cache (bytes)} = 2 \times n_{layers} \times n_{kv\_heads} \times head\_dim \times seq\_len \times batch \times \text{bytes/phần tử}$$
+
+(hệ số 2 vì phải lưu cả K **và** V)
 
 ```python
 def kv_cache_size_bytes(n_layers, n_kv_heads, head_dim, seq_len, batch=1, bytes_per_elem=2):

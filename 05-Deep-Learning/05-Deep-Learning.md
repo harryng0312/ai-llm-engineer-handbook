@@ -32,9 +32,9 @@ Nếu không có activation phi tuyến, xếp chồng bao nhiêu lớp neuron c
 
 | Activation | Công thức | Đặc điểm |
 |---|---|---|
-| Sigmoid | `1 / (1 + e^-x)` | Output trong (0,1), dễ bị "bão hòa" (gradient ≈ 0) khi \|x\| lớn |
-| Tanh | `(e^x - e^-x) / (e^x + e^-x)` | Output trong (-1,1), cùng vấn đề bão hòa như sigmoid nhưng đối xứng quanh 0 |
-| ReLU | `max(0, x)` | Không bão hòa với x > 0, tính rẻ, là lựa chọn mặc định cho mạng sâu hiện đại |
+| Sigmoid | $\sigma(x) = \dfrac{1}{1 + e^{-x}}$ | Output trong (0,1), dễ bị "bão hòa" (gradient ≈ 0) khi $\|x\|$ lớn |
+| Tanh | $\tanh(x) = \dfrac{e^x - e^{-x}}{e^x + e^{-x}}$ | Output trong (-1,1), cùng vấn đề bão hòa như sigmoid nhưng đối xứng quanh 0 |
+| ReLU | $\text{ReLU}(x) = \max(0, x)$ | Không bão hòa với x > 0, tính rẻ, là lựa chọn mặc định cho mạng sâu hiện đại |
 
 Ghép nhiều neuron thành 1 lớp (layer), ghép nhiều lớp thành **Multi-Layer Perceptron (MLP)** — mỗi lớp nhận output của lớp trước làm input:
 
@@ -211,9 +211,9 @@ h0 -> [RNN] -> [RNN] -> [RNN] -> [RNN] -> h4
        │         │         │         │
        ▼         ▼         ▼         ▼
        y1        y2        y3        y4
-
-h_t = tanh(W_xh · x_t + W_hh · h_(t-1) + b)
 ```
+
+$$h_t = \tanh(W_{xh} \cdot x_t + W_{hh} \cdot h_{t-1} + b)$$
 
 ```python
 import numpy as np
@@ -417,8 +417,12 @@ Decoder ở bước t cần sinh từ tiếp theo, nhìn lại TOÀN BỘ hidden
    │    │    │    │    │
    └────┴────┴────┴────┘
              ▼
-   context_t = Σ αi · hi     (context vector RIÊNG cho mỗi bước decode, không cố định như Seq2Seq gốc)
+        context_t
 ```
+
+$$\text{context}_t = \sum_i \alpha_i \cdot h_i$$
+
+(context vector **riêng cho mỗi bước decode**, không cố định như Seq2Seq gốc)
 
 ```python
 import torch
