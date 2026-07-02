@@ -40,24 +40,24 @@
 Qwen -\> BGE -\> Qdrant -\> RAG -\> LangGraph -\> Rust Backend -\> Web
 UI
 
-
+## Structure:
 AI-LLM-Engineer/
 │
-├── 00-README.md
-├── 01-Roadmap.md
-├── 02-Math-for-LLM.md
-├── 03-Deep-Learning.md
-├── 04-Transformer.md
-├── 05-BERT-T5-GPT.md
-├── 06-Embedding.md
-├── 07-RAG.md
-├── 08-Fine-Tuning.md
-├── 09-LangChain.md
-├── 10-LangGraph.md
-├── 11-Agent.md
-├── 12-Deployment.md
-├── 13-Rust-AI.md
-├── 14-Projects.md
+├── 00-README
+├── 01-Roadmap
+├── 02-Math-for-LLM
+├── 03-Deep-Learning
+├── 04-Transformer
+├── 05-BERT-T5-GPT
+├── 06-Embedding
+├── 07-RAG
+├── 08-Fine-Tuning
+├── 09-LangChain
+├── 10-LangGraph
+├── 11-Agent
+├── 12-Deployment
+├── 13-Rust-AI
+├── 14-Projects
 └── assets/
 
 * Chương 1.1: Giới thiệu LLM, Roadmap và môi trường
