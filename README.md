@@ -8,4 +8,4 @@ Xem [00-README/00-README.md](00-README/00-README.md) để có tổng quan toàn
 
 ## Cấu trúc
 
-Sách được tổ chức thành 1 thư mục cho mỗi chương (đánh số `00` đến `21`, ví dụ `04-Transformer/`), mỗi thư mục chứa file nội dung `.md` và notebook `.ipynb` cùng tên (trừ chương `13-Rust-AI`). Xem [SUMMARY.md](SUMMARY.md) để có danh sách đầy đủ.
+Sách được tổ chức thành 1 thư mục cho mỗi chương (đánh số `00` đến `21`, ví dụ `06-Transformer/`), mỗi thư mục chứa file nội dung `.md` và notebook `.ipynb` cùng tên (trừ chương `15-Rust-AI`). Xem [SUMMARY.md](SUMMARY.md) để có danh sách đầy đủ.
