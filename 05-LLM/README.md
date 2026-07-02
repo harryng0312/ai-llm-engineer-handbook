@@ -40,6 +40,69 @@ x -> RMSNorm -> Self-Attention (causal, RoPE) -> +residual
 | Attention | Multi-Head Attention (MHA) | GQA hoặc MQA (tiết kiệm KV cache) |
 | Attention mask | — | Causal mask (chỉ nhìn token quá khứ) |
 
+### Bên trong Self-Attention: Scaled Dot-Product
+
+Attention cho phép mỗi token "hỏi" các token khác để lấy thông tin liên quan. Từ embedding của mỗi token, ba ma trận trọng số học được chiếu ra 3 vector: Query `Q` (câu hỏi token đang cần), Key `K` (nhãn để token khác biết có đáng trả lời không), Value `V` (nội dung thực sự lấy về nếu liên quan):
+
+```
+Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k  +  mask ) · V
+```
+
+Sơ đồ luồng dữ liệu của 1 attention head:
+
+```
+        Q (seq×d_k)       K (seq×d_k)        V (seq×d_k)
+            │                   │                  │
+            └─────────┬─────────┘                  │
+                       ▼                            │
+               Q · Kᵀ   (seq×seq)                   │
+                       │                            │
+                       ▼                            │
+                  chia cho √d_k                     │
+                       │                            │
+                       ▼                            │
+            + causal mask (-inf phía trên)          │
+                       │                            │
+                       ▼                            │
+                 softmax (theo hàng)                 │
+                       │                            │
+                       └─────────────┬──────────────┘
+                                     ▼
+                         nhân với V (tổng có trọng số)
+                                     │
+                                     ▼
+                        Attention output (seq×d_k)
+```
+
+Vì sao chia cho `√d_k`: khi `d_k` lớn, tích vô hướng `Q·Kᵀ` có phương sai tăng theo `d_k`, khiến softmax bị "bão hòa" (1 giá trị gần 1, còn lại gần 0) → gradient gần như triệt tiêu khi backprop. Chia cho `√d_k` giữ phương sai ổn định bất kể kích thước chiều.
+
+**Multi-Head Attention**: thay vì attention 1 lần trên toàn bộ `d_model` chiều, chia thành `h` "đầu" (head) song song, mỗi đầu hoạt động trên 1 không gian con `d_k = d_model / h` chiều, rồi ghép (concat) kết quả và chiếu qua ma trận `W_O`:
+
+```python
+import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(q, k, v, mask=None):
+    """q, k, v: (batch, n_heads, seq, head_dim)"""
+    d_k = q.shape[-1]
+    scores = q @ k.transpose(-2, -1) / (d_k ** 0.5)   # (batch, n_heads, seq, seq)
+    if mask is not None:
+        scores = scores + mask
+    weights = F.softmax(scores, dim=-1)
+    return weights @ v                                 # (batch, n_heads, seq, head_dim)
+
+batch, n_heads, seq, head_dim = 1, 4, 6, 16
+q = torch.randn(batch, n_heads, seq, head_dim)
+k = torch.randn(batch, n_heads, seq, head_dim)
+v = torch.randn(batch, n_heads, seq, head_dim)
+
+mask = torch.triu(torch.full((seq, seq), float("-inf")), diagonal=1)
+output = scaled_dot_product_attention(q, k, v, mask=mask)
+print(output.shape)  # torch.Size([1, 4, 6, 16]) -- mỗi head xử lý độc lập, ghép lại thành d_model ở bước sau
+```
+
+Lý do dùng nhiều head nhỏ thay vì 1 head lớn: mỗi head có thể học "chú ý" theo một khía cạnh quan hệ khác nhau giữa các token (ví dụ 1 head học quan hệ cú pháp giữa các từ gần nhau, 1 head khác học quan hệ ngữ nghĩa ở xa) — thực nghiệm cho thấy nhiều head nhỏ tổng quát hóa tốt hơn 1 head lớn có cùng tổng số tham số.
+
 **Causal mask** là điểm mấu chốt khiến decoder-only "chỉ nhìn về quá khứ": khi tính attention score giữa token thứ `i` và `j`, nếu `j > i` thì score bị gán `-inf` trước softmax, đảm bảo token thứ `i` không "nhìn thấy tương lai".
 
 ```python
@@ -57,6 +120,61 @@ print(causal_mask(4))
 #         [0., 0., 0., 0.]])
 ```
 
+Trực quan hóa "token nào nhìn thấy token nào" với câu "the cat sat on the mat" (✓ = được attend, `·` = bị causal mask chặn):
+
+```
+            the   cat   sat   on    the   mat
+   the       ✓     ·     ·     ·     ·     ·
+   cat       ✓     ✓     ·     ·     ·     ·
+   sat       ✓     ✓     ✓     ·     ·     ·
+   on        ✓     ✓     ✓     ✓     ·     ·
+   the       ✓     ✓     ✓     ✓     ✓     ·
+   mat       ✓     ✓     ✓     ✓     ✓     ✓
+```
+
+Mỗi hàng là một token đang "hỏi", mỗi cột là token có thể được nhìn thấy — nhận thấy ma trận luôn là tam giác dưới (kể cả đường chéo): token thứ `i` chỉ nhìn được chính nó và các token đứng trước.
+
+### Sơ đồ toàn cảnh một forward pass
+
+```
+"The cat sat" (token ids)
+        │
+        ▼
+┌─────────────────────────┐
+│    Token Embedding       │   lookup bảng (vocab_size × d_model)
+└─────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────┐
+│               Decoder Block × N                 │
+│   ┌─────────────────────────────────────────┐  │
+│   │ RMSNorm                                   │  │
+│   │   │                                        │  │
+│   │   ▼                                        │  │
+│   │ Causal Self-Attention (Q,K áp RoPE)  ─────┼──┼──▶ (+) residual
+│   │   │                                        │  │
+│   │ RMSNorm                                   │  │
+│   │   │                                        │  │
+│   │   ▼                                        │  │
+│   │ FeedForward (SwiGLU)                 ─────┼──┼──▶ (+) residual
+│   └─────────────────────────────────────────┘  │
+└───────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────┐
+│      Final RMSNorm       │
+└─────────────────────────┘
+        │
+        ▼
+┌─────────────────────────┐
+│  Linear (d_model→vocab)  │
+│        + Softmax          │
+└─────────────────────────┘
+        │
+        ▼
+ P(token tiếp theo | "The cat sat")  →  ví dụ: "on" (xác suất cao nhất)
+```
+
 ## 2. RoPE — Rotary Positional Embedding
 
 Vấn đề: attention không có khái niệm "thứ tự" tự nhiên (nó là tổng có trọng số, hoán vị token thì kết quả không đổi). Ta cần bơm thông tin vị trí vào.
@@ -68,6 +186,19 @@ Công thức (cho một cặp chiều `(x1, x2)` ở vị trí `m`, tần số `
 ```
 x1' = x1 * cos(mθ) - x2 * sin(mθ)
 x2' = x1 * sin(mθ) + x2 * cos(mθ)
+```
+
+Hình dung phép xoay này trong mặt phẳng 2 chiều `(x1, x2)`: độ dài vector giữ nguyên, chỉ quay đi một góc `mθ` tỉ lệ thuận với vị trí token `m` — token càng đứng xa nhau, góc lệch giữa 2 vector Q/K sau khi xoay càng khác nhau, nhờ đó tích `Q·K` "đọc" được khoảng cách tương đối mà không cần cộng thêm bất kỳ vector vị trí nào:
+
+```
+ Token ở vị trí m=0 (góc xoay = 0):        Token ở vị trí m=5 (góc xoay = 5θ):
+
+        x2                                        x2
+        │                                          │       ↗ vector đã xoay
+        │   ↗ (x1, x2)                             │     ╱   (x1', x2')
+        │  ╱                                       │   ╱ 5θ
+        │ ╱                                        │ ╱______
+        └──────────────── x1                       └──────────────── x1
 ```
 
 Cài đặt tối giản bằng NumPy để thấy rõ cơ chế xoay:
@@ -99,6 +230,15 @@ q_at_pos_5 = apply_rope(q, position=5)
 print(np.allclose(q_at_pos_0, q))  # True: vị trí 0 -> góc xoay = 0, vector giữ nguyên
 ```
 
+Mỗi cặp chiều trong vector có một tần số `θ_i` riêng — cặp chiều đầu quay rất nhanh theo vị trí (bắt thông tin vị trí *cục bộ*, giữa các token sát nhau), cặp chiều cuối quay rất chậm (bắt thông tin vị trí *toàn cục*, giữa các token ở xa) — giống cách một chiếc đồng hồ dùng cả kim giây (nhanh) lẫn kim giờ (chậm) để mã hóa thời gian không nhập nhằng trong một phạm vi rộng:
+
+```
+cặp chiều (0, 1):      θ_0 = 1/10000^(0/d)        ≈ 1.0      → quay nhanh   (như kim giây)
+cặp chiều (2, 3):      θ_1 = 1/10000^(2/d)        ≈ 0.316    → quay vừa
+        ...
+cặp chiều (d-2, d-1):  θ_(d/2-1) = 1/10000^((d-2)/d) ≈ 0.0001 → quay rất chậm (như kim giờ)
+```
+
 Trực giác quan trọng cần nhớ: RoPE áp dụng lên **Q và K trước khi tính attention**, không áp lên V. Nhờ tính chất "chỉ phụ thuộc vị trí tương đối", các kỹ thuật kéo dài context (NTK-aware scaling, YaRN) đều là các biến thể chỉnh lại `base`/`theta` của RoPE.
 
 ## 3. KV Cache
@@ -106,6 +246,29 @@ Trực giác quan trọng cần nhớ: RoPE áp dụng lên **Q và K trước k
 Khi sinh text autoregressive (từng token một), nếu không cache, mỗi bước sinh token mới ta phải chạy lại **toàn bộ** self-attention cho tất cả token trước đó — độ phức tạp `O(n²)` cho toàn chuỗi độ dài `n`, rất lãng phí vì Key/Value của các token cũ không hề đổi.
 
 **KV Cache**: lưu lại Key và Value đã tính của mọi token trước đó. Ở bước sinh token mới, chỉ cần tính Q/K/V cho **1 token mới**, rồi attention token đó với toàn bộ K/V đã cache — độ phức tạp mỗi bước giảm từ `O(n²)` xuống `O(n)`.
+
+```
+Bước 1 — sinh "cat":   K cache: [k_the]                           V cache: [v_the]
+Bước 2 — sinh "sat":   K cache: [k_the, k_cat]                    V cache: [v_the, v_cat]
+Bước 3 — sinh "on":    K cache: [k_the, k_cat, k_sat]             V cache: [v_the, v_cat, v_sat]
+Bước 4 — sinh "the":   K cache: [k_the, k_cat, k_sat, k_on]       V cache: [v_the, v_cat, v_sat, v_on]
+                        └── mỗi bước chỉ TÍNH THÊM 1 cặp (k, v) mới, không tính lại các cặp đã có trong cache
+```
+
+So sánh độ phức tạp cho toàn bộ quá trình sinh `n` token, không chỉ 1 bước:
+
+```
+KHÔNG cache — mỗi bước tính lại attention cho TOÀN BỘ chuỗi đã sinh tới lúc đó:
+  bước 1: attend trên 1 token  -> O(1²)
+  bước 2: attend trên 2 token  -> O(2²)
+  ...
+  bước n: attend trên n token  -> O(n²)
+  Tổng: O(1² + 2² + ... + n²) = O(n³)
+
+CÓ cache — mỗi bước chỉ tính Q/K/V cho 1 token mới rồi attend với cache có sẵn:
+  bước 1: O(1)   bước 2: O(2)   ...   bước n: O(n)
+  Tổng: O(1 + 2 + ... + n) = O(n²)     -- giảm hẳn 1 bậc so với không cache
+```
 
 Minh họa sự khác biệt tốc độ bằng model nhỏ (chạy được trên CPU) với thư viện `transformers`:
 
@@ -151,6 +314,43 @@ print(f"Không cache: {t1 - t0:.2f}s | Có cache: {t2 - t1:.2f}s")
 
 Chạy thử sẽ thấy bản có cache nhanh hơn rõ rệt khi số token sinh ra càng lớn. Đây cũng là lý do các server inference (vLLM, TGI, llama.cpp) đều tối ưu quản lý KV cache (paged attention, quantized KV cache...) — vì ở batch lớn, **KV cache chính là phần chiếm nhiều VRAM nhất**, không phải trọng số model.
 
+### KV cache chiếm bao nhiêu VRAM?
+
+```
+KV cache (bytes) = 2 (K và V) × n_layers × n_kv_heads × head_dim × seq_len × batch × bytes/phần_tử
+```
+
+```python
+def kv_cache_size_bytes(n_layers, n_kv_heads, head_dim, seq_len, batch=1, bytes_per_elem=2):
+    """bytes_per_elem=2 cho fp16/bf16 -- kiểu dữ liệu phổ biến nhất khi serving."""
+    return 2 * n_layers * n_kv_heads * head_dim * seq_len * batch * bytes_per_elem
+
+# Cấu hình gần giống Qwen2.5-7B: 28 layer, GQA với 4 KV head (xem mục 4), head_dim 128
+for seq_len in (4_096, 32_768, 131_072):
+    size = kv_cache_size_bytes(n_layers=28, n_kv_heads=4, head_dim=128, seq_len=seq_len)
+    print(f"context {seq_len:>7,} token -> {size / 1024**3:.2f} GB KV cache (1 request)")
+
+# context   4,096 token -> 0.22 GB KV cache (1 request)
+# context  32,768 token -> 1.75 GB KV cache (1 request)
+# context 131,072 token -> 7.00 GB KV cache (1 request)
+```
+
+Trọng số Qwen2.5-7B ở fp16 chiếm khoảng 14GB **cố định**, nhưng KV cache tăng tuyến tính theo *cả* độ dài context *lẫn* số request chạy đồng thời — đây là lý do phục vụ nhiều user với context dài là bài toán khó về bộ nhớ hơn nhiều so với chỉ việc load xong trọng số model.
+
+**PagedAttention** (dùng trong vLLM) giải quyết lãng phí bộ nhớ khi cấp phát KV cache: thay vì cấp phát trước 1 vùng nhớ liên tục cho độ dài tối đa có thể xảy ra (lãng phí nếu câu trả lời thực tế ngắn hơn nhiều), bộ nhớ được chia thành các "block" cố định và cấp phát động — giống hệt cơ chế virtual memory paging của hệ điều hành:
+
+```
+Cấp phát truyền thống (lãng phí nếu request ngắn hơn max_len dự phòng):
+  Request A: [■■■■■■■■□□□□□□□□□□□□□□□□]    ■ = đã dùng, □ = cấp sẵn nhưng chưa dùng tới
+
+PagedAttention — chia thành block cố định, chỉ cấp đúng số block đang cần:
+  Request A: [■■■■][■■■□]                   2 block, block cuối dùng 3/4
+  Request B: [■■■■][■■■■][■■□□]             3 block
+                     ▲
+        2 request có thể DÙNG CHUNG 1 block nếu trùng prefix
+        (ví dụ cùng system prompt) -> tiết kiệm thêm bộ nhớ
+```
+
 ## 4. GQA/MQA — Grouped/Multi Query Attention
 
 KV cache càng lớn thì càng tốn VRAM. Một cách giảm kích thước KV cache: giảm **số lượng KV head** so với số Query head.
@@ -162,6 +362,25 @@ KV cache càng lớn thì càng tốn VRAM. Một cách giảm kích thước KV
 | GQA (Grouped-Query Attention) | vài nhóm (vd 8, mỗi nhóm dùng chung 1 KV head) | Cân bằng giữa MHA và MQA — Llama 2/3, Qwen2 đều dùng GQA |
 
 Ý tưởng: nhóm nhiều Query head lại để **dùng chung** một cặp Key/Value head, thay vì mỗi Query head có KV riêng.
+
+```
+MHA — mỗi Q head có 1 KV head riêng, không chia sẻ:
+  Q head:   Q1   Q2   Q3   Q4   Q5   Q6   Q7   Q8
+  KV head:  K1   K2   K3   K4   K5   K6   K7   K8
+            (8 KV head -> KV cache lớn nhất, chất lượng tốt nhất)
+
+GQA — mỗi NHÓM Q head dùng chung 1 KV head:
+  Q head:   Q1  Q2 │ Q3  Q4 │ Q5  Q6 │ Q7  Q8
+             └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘
+  KV head:     K1        K2        K3        K4
+            (4 KV head -> giảm 1/2 KV cache so với MHA, chất lượng gần như không đổi)
+
+MQA — MỌI Q head dùng chung đúng 1 KV head:
+  Q head:   Q1  Q2  Q3  Q4  Q5  Q6  Q7  Q8
+             └─────────────────┬─────────────────┘
+  KV head:                    K1
+            (1 KV head -> KV cache nhỏ nhất, có thể đánh đổi 1 phần chất lượng)
+```
 
 ```python
 import torch
