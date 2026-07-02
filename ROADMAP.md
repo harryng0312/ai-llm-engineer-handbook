@@ -12,6 +12,10 @@ Phase 5: Transformer
 
 Phase 6: LLM
 
-Phase 7: RAG
+Phase 7: Vector Database
 
-Phase 8: AI Agent
+Phase 8: RAG
+
+Phase 9: AI Agent
+
+Phase 10: Projects
