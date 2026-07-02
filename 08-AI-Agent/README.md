@@ -2,6 +2,8 @@
 
 > RAG ([chương 06](../06-RAG/README.md)) cho LLM "đọc thêm tài liệu" trước khi trả lời — một bước retrieve cố định. **Agent** đi xa hơn: LLM tự quyết định cần làm gì tiếp theo (gọi tool nào, tìm gì, khi nào dừng) qua nhiều bước, dựa trên kết quả của chính các bước trước đó.
 
+> 📓 Toàn bộ code ví dụ trong chương này cũng có ở dạng notebook chạy được: [`08-AI-Agent.ipynb`](./08-AI-Agent.ipynb).
+
 ## Mục lục
 
 1. [Agent là gì — vòng lặp ReAct](#1-agent-là-gì--vòng-lặp-react)

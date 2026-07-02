@@ -2,6 +2,8 @@
 
 > Chương này ráp toàn bộ kiến thức từ [05-LLM](../05-LLM/README.md), [07-Vector-Database](../07-Vector-Database/README.md), [06-RAG](../06-RAG/README.md) và [08-AI-Agent](../08-AI-Agent/README.md) thành một ứng dụng chạy được từ đầu đến cuối: pipeline `Qwen -> BGE -> Qdrant -> RAG -> LangGraph -> Backend -> Web UI`.
 
+> 📓 Toàn bộ code ví dụ trong chương này cũng có ở dạng notebook chạy được: [`16-Projects.ipynb`](./16-Projects.ipynb).
+
 ## Mục lục
 
 1. [Mục tiêu và kiến trúc](#1-mục-tiêu-và-kiến-trúc)
@@ -172,8 +174,8 @@ def ask(question: str) -> str:
 ```
 
 ```python
->>> from agent import ask
->>> print(ask("KV cache hoạt động như thế nào?"))
+from agent import ask
+print(ask("KV cache hoạt động như thế nào?"))
 ```
 
 ## 5. Bước 3 — Backend API (FastAPI)

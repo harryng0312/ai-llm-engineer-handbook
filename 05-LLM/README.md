@@ -2,6 +2,8 @@
 
 > Chương này trả lời câu hỏi: "Bên trong một LLM hiện đại (GPT, Qwen, Llama...) có gì, và tại sao nó được thiết kế như vậy?" Mục tiêu là hiểu đủ sâu để đọc code inference thật, tự chạy một model local bằng Ollama, và biết khi nào cần LoRA/QLoRA để fine-tune.
 
+> 📓 Toàn bộ code ví dụ trong chương này cũng có ở dạng notebook chạy được: [`05-LLM.ipynb`](./05-LLM.ipynb).
+
 ## Mục lục
 
 1. [Kiến trúc Decoder-only](#1-kiến-trúc-decoder-only)

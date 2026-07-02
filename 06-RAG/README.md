@@ -2,6 +2,8 @@
 
 > Chương này ghép LLM ([05-LLM](../05-LLM/README.md)) và Vector Database ([07-Vector-Database](../07-Vector-Database/README.md)) lại thành một pipeline hoàn chỉnh: cho LLM "tra cứu" tài liệu riêng trước khi trả lời, thay vì chỉ dựa vào kiến thức đã train.
 
+> 📓 Toàn bộ code ví dụ trong chương này cũng có ở dạng notebook chạy được: [`06-RAG.ipynb`](./06-RAG.ipynb).
+
 ## Mục lục
 
 1. [RAG là gì và tại sao cần](#1-rag-là-gì-và-tại-sao-cần)

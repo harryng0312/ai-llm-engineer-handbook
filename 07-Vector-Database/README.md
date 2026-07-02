@@ -2,6 +2,8 @@
 
 > Chương này trả lời câu hỏi: "Làm sao biến văn bản thành vector để máy tính so sánh được 'độ giống nhau về ý nghĩa', và lưu/tìm hàng triệu vector đó nhanh thế nào?" Đây là nền tảng bắt buộc trước khi học RAG ở chương sau.
 
+> 📓 Toàn bộ code ví dụ trong chương này cũng có ở dạng notebook chạy được: [`07-Vector-Database.ipynb`](./07-Vector-Database.ipynb).
+
 ## Mục lục
 
 1. [Embedding là gì](#1-embedding-là-gì)
