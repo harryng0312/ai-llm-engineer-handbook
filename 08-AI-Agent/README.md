@@ -721,7 +721,7 @@ def route_model(question: str) -> str:
     return "gpt-4o" if needs_deep_reasoning else "qwen2.5:7b"
 ```
 
-**AI Gateway** — một lớp đứng trước mọi request tới LLM/agent, đảm nhiệm auth, rate limiting, logging tập trung — giống vai trò của lớp Rust gateway đã phác thảo ở [16-Projects §7](../16-Projects/README.md#7-mở-rộng-rust-backend), chỉ khác là ở quy mô nhiều team/nhiều model hơn.
+**AI Gateway** — một lớp đứng trước mọi request tới LLM/agent, đảm nhiệm auth, rate limiting, logging tập trung — giống vai trò của lớp Rust gateway đã phác thảo ở [16-Projects, Dự án 1 §7](../16-Projects/01-rag-agent-assistant.md#7-mở-rộng-rust-backend), chỉ khác là ở quy mô nhiều team/nhiều model hơn.
 
 **Enterprise RAG đa tenant** — nhiều khách hàng/phòng ban dùng chung hạ tầng vector DB nhưng dữ liệu phải cách ly tuyệt đối. Cách làm phổ biến: gắn `tenant_id` vào payload mọi điểm dữ liệu, **bắt buộc** filter theo `tenant_id` trong mọi câu query, và `tenant_id` phải lấy từ thông tin xác thực (token đã verify) — **không bao giờ** tin `tenant_id` do client tự gửi lên:
 
@@ -744,7 +744,7 @@ def search_for_tenant(query_vector: list[float], tenant_id: str, client: QdrantC
 - Có cách xóa toàn bộ dữ liệu (vector + log) gắn với 1 user cụ thể khi được yêu cầu.
 - Định kỳ review log để phát hiện dấu hiệu prompt injection đã lọt qua guardrail ở [mục 15](#15-security-và-guardrails).
 
-Việc triển khai đầy đủ Model Routing/AI Gateway/Governance cho một nền tảng nhiều tenant là chủ đề riêng của kiến trúc hệ thống doanh nghiệp — mục này chỉ nhằm giúp nhận diện đúng vấn đề khi dự án cá nhân ở [16-Projects](../16-Projects/README.md) phát triển vượt quy mô một ứng dụng đơn lẻ.
+Việc triển khai đầy đủ Model Routing/AI Gateway/Governance cho một nền tảng nhiều tenant là chủ đề riêng của kiến trúc hệ thống doanh nghiệp — mục này chỉ nhằm giúp nhận diện đúng vấn đề khi dự án cá nhân ở [16-Projects, Dự án 1](../16-Projects/01-rag-agent-assistant.md) phát triển vượt quy mô một ứng dụng đơn lẻ.
 
 ## 17. Bài tập
 
