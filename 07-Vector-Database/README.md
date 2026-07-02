@@ -251,6 +251,8 @@ for r in results:
 
 ## 9. Tài liệu tham khảo
 
+> 📖 Xem chú giải chi tiết "vì sao mỗi paper quan trọng" ở [15-Papers §3](../15-Papers/README.md#3-embedding--vector-search).
+
 - Oord et al., *Representation Learning with Contrastive Predictive Coding* (InfoNCE, 2018)
 - Schroff et al., *FaceNet: A Unified Embedding for Face Recognition and Clustering* (Triplet Loss, 2015)
 - Xiao et al., *C-Pack: Packed Resources For General Chinese Embeddings* (BGE, 2023)

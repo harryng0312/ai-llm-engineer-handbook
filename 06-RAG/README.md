@@ -276,6 +276,8 @@ Thực dụng: xây một bộ ~20-50 câu hỏi thật (kèm câu trả lời m
 
 ## 9. Tài liệu tham khảo
 
+> 📖 Xem chú giải chi tiết "vì sao mỗi paper quan trọng" ở [15-Papers §4](../15-Papers/README.md#4-rag) (nền tảng) và [§9](../15-Papers/README.md#9-rag--agent-nâng-cao) (Self-RAG, CRAG — RAG nâng cao).
+
 - Lewis et al., *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks* (RAG gốc, 2020)
 - Robertson & Zaragoza, *The Probabilistic Relevance Framework: BM25 and Beyond* (2009)
 - Cormack et al., *Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods* (RRF, 2009)

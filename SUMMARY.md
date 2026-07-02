@@ -8,4 +8,5 @@
 - 07-Vector-Database
 - 06-RAG
 - 08-AI-Agent
+- 15-Papers
 - 16-Projects

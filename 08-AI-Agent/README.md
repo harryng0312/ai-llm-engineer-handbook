@@ -761,6 +761,8 @@ Việc triển khai đầy đủ Model Routing/AI Gateway/Governance cho một n
 
 ## 18. Tài liệu tham khảo
 
+> 📖 Xem chú giải chi tiết "vì sao mỗi paper quan trọng" ở [15-Papers §5](../15-Papers/README.md#5-agent--reasoning) (nền tảng) và [§9](../15-Papers/README.md#9-rag--agent-nâng-cao) (Toolformer, Generative Agents — nâng cao).
+
 - Yao et al., *ReAct: Synergizing Reasoning and Acting in Language Models* (2022)
 - Yao et al., *Tree of Thoughts: Deliberate Problem Solving with Large Language Models* (2023)
 - Shinn et al., *Reflexion: Language Agents with Verbal Reinforcement Learning* (2023)

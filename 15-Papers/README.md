@@ -16,6 +16,7 @@
 10. [Xem trước: Diffusion & Multimodal](#10-xem-trước-diffusion--multimodal)
 11. [Cách đọc một paper AI/ML hiệu quả](#11-cách-đọc-một-paper-aiml-hiệu-quả)
 12. [Bảng tổng hợp theo dòng thời gian](#12-bảng-tổng-hợp-theo-dòng-thời-gian)
+13. [Tài liệu tham khảo](#13-tài-liệu-tham-khảo)
 
 ---
 

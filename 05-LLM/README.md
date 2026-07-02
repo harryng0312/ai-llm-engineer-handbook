@@ -598,6 +598,8 @@ vLLM expose một API tương thích OpenAI, nên có thể dùng lại SDK `ope
 
 ## 9. Tài liệu tham khảo
 
+> 📖 Xem chú giải chi tiết "vì sao mỗi paper quan trọng" ở [15-Papers §2](../15-Papers/README.md#2-nền-tảng-transformer--llm) (nền tảng) và [§6-7](../15-Papers/README.md#6-alignment--fine-tuning-nâng-cao) (alignment, hiệu năng nâng cao).
+
 - Vaswani et al., *Attention Is All You Need* (2017)
 - Su et al., *RoFormer: Enhanced Transformer with Rotary Position Embedding* (2021)
 - Ainslie et al., *GQA: Training Generalized Multi-Query Transformer Models* (2023)
